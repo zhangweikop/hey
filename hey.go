@@ -16,6 +16,7 @@
 package main
 
 import (
+        "bytes"
 	"flag"
 	"fmt"
 	"io/ioutil"
@@ -26,7 +27,7 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/rakyll/hey/requester"
+	"./requester"
 )
 
 const (
@@ -62,6 +63,9 @@ var (
 	n = flag.Int("n", 200, "")
 	q = flag.Int("q", 0, "")
 	t = flag.Int("t", 20, "")
+        
+        cert = flag.String("cert", "", "")
+        key = flag.String("key", "", "")
 
 	h2 = flag.Bool("h2", false, "")
 
@@ -80,6 +84,8 @@ Options:
   -n  Number of requests to run. Default is 200.
   -c  Number of requests to run concurrently. Total number of requests cannot
       be smaller than the concurrency level. Default is 50.
+  -cert Client certificate file
+  -key Client key file
   -q  Rate limit, in seconds (QPS).
   -o  Output type. If none provided, a summary is printed.
       "csv" is the only supported alternative. Dumps the response
@@ -132,7 +138,7 @@ func main() {
 	if num < conc {
 		usageAndExit("-n cannot be less than -c.")
 	}
-
+        
 	url := flag.Args()[0]
 	method := strings.ToUpper(*m)
 
@@ -191,7 +197,7 @@ func main() {
 		}
 	}
 
-	req, err := http.NewRequest(method, url, nil)
+	req, err := http.NewRequest(method, url, bytes.NewBuffer(bodyAll))
 	if err != nil {
 		usageAndExit(err.Error())
 	}
@@ -218,6 +224,8 @@ func main() {
 		ProxyAddr:          proxyURL,
 		Output:             *output,
 		EnableTrace:        *enableTrace,
+                Cert:               *cert,
+                Key:                *key,
 	}).Run()
 }
 

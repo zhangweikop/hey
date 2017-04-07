@@ -60,6 +60,10 @@ type Work struct {
 
 	// H2 is an option to make HTTP/2 requests
 	H2 bool
+        
+        // Client identity 
+        Cert string
+        Key string
 
 	// EnableTrace is an option to enable httpTrace
 	EnableTrace bool
@@ -218,10 +222,20 @@ func (b *Work) runWorker(n int) {
 	if b.QPS > 0 {
 		throttle = time.Tick(time.Duration(1e6/(b.QPS)) * time.Microsecond)
 	}
-
+        var clientCerts = []tls.Certificate{}
+        if b.Cert != "" && b.Key != "" {
+        	clientCert, err := tls.LoadX509KeyPair(b.Cert, b.Key)
+		if err != nil { 
+			fmt.Printf("Error happened when loading client identity (%s, %s): %v\n", b.Cert, b.Key, err)
+		} else {
+			clientCerts = append(clientCerts, clientCert)
+                }
+        }
+        
 	tr := &http.Transport{
 		TLSClientConfig: &tls.Config{
 			InsecureSkipVerify: true,
+			Certificates: clientCerts,              
 		},
 		DisableCompression: b.DisableCompression,
 		DisableKeepAlives:  b.DisableKeepAlives,
